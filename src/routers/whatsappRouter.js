@@ -1,11 +1,12 @@
 import { Router } from "express";
 import WhatsappController from "../controllers/whatsappController";
-
-export default class WhatsappRouter {
+import BaseRouter from "./baseRouter";
+export default class WhatsappRouter extends BaseRouter  {
   whatsappController = null;
-  router = Router();
+  router = new Router();
 
   constructor() {
+    super();
     this.whatsappController = new WhatsappController();
     this.iniciarRobo();
     this.sendMessage();
