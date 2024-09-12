@@ -1,3 +1,5 @@
+import Utils from "../utils/utils";
+
 export default class BaseRouter {
   ok (data, res) {
     if (res) {
@@ -36,7 +38,7 @@ export default class BaseRouter {
       }
     } catch (error) {
       if (res) {
-        let message = trataMensagemErrorTry(error);
+        let message = Utils.trataMensagemErrorTry(error);
         res.json({ valido: false, data: { message: message } });
       } else {
         return { valido: false, data: { message: String(error) } };

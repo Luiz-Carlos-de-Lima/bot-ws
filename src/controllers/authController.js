@@ -6,7 +6,7 @@ import Utils from "../utils/utils";
 
 export default class AuthController {
 
-  async sendOtpWhatsapp(phoneNumber) {
+  async sendOtpWhatsapp(phoneNumber, headers) {
     if (whatsappWebJS.autenticated) {
       let code = Utils.tokenRandom(6);
 
@@ -14,7 +14,9 @@ export default class AuthController {
 
       const novaOtp = new Otp({
         code: code,
+        phone: phoneNumber,
         validade: validade,
+        headers: headers,
         used: false,
       });
 
@@ -28,9 +30,10 @@ export default class AuthController {
     }
   }
 
-  async validateOtpCode(code) {
+  async validateOtpCode(code, phoneNumber) {
     const otp = await Otp.findOne({
       code: code,
+      phone: phoneNumber,
       used: false,
       validade: { $gte: new Date() },
     });

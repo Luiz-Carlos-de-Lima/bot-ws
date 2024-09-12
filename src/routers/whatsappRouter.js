@@ -10,6 +10,7 @@ export default class WhatsappRouter extends BaseRouter  {
     this.whatsappController = new WhatsappController();
     this.iniciarRobo();
     this.sendMessage();
+    this.deleteRouter();
   }
 
   iniciarRobo() {
@@ -36,6 +37,13 @@ export default class WhatsappRouter extends BaseRouter  {
       } catch (e) {
         res.send({ valido: false, message: e });
       }
+    });
+  }
+
+  deleteRouter() {
+    this.router.post("/deleteFolder", async (req, res) => {
+      await this.whatsappController.deleteFolderTeste();
+      this.ok({}, res);
     });
   }
 }
