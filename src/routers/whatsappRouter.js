@@ -10,7 +10,7 @@ export default class WhatsappRouter extends BaseRouter  {
     this.whatsappController = new WhatsappController();
     this.iniciarRobo();
     this.sendMessage();
-    this.deleteRouter();
+    this.sendImage();
   }
 
   iniciarRobo() {
@@ -27,23 +27,37 @@ export default class WhatsappRouter extends BaseRouter  {
         console.log(body);
         if (body.phoneNumber && body.message) {
           this.whatsappController.sendMessage(body.phoneNumber, body.message);
-          res.send({ valido: true });
+          this.ok({},res);
         } else {
-          res.send({
-            valido: false,
-            message: "telefone e mensagem são obrigatório",
-          });
+          this.fail("telefone e mensagem são obrigatório", res);
+
         }
       } catch (e) {
-        res.send({ valido: false, message: e });
+        this.fail(e, res);
       }
     });
   }
 
-  deleteRouter() {
-    this.router.post("/deleteFolder", async (req, res) => {
-      await this.whatsappController.deleteFolderTeste();
-      this.ok({}, res);
+  sendImage() {
+    this.router.post("/sendImage", async (req, res) => {
+      try {
+      let body = req.body;
+
+      if (!body?.phoneNumber) {
+        this.fail("telefone e mensagem são obrigatório.", res);
+        return;
+      }
+
+      if (!body?.base64Image) {
+        this.fail( "A imagem em formato base64 é obrigatório.", res);
+        return;
+      }
+
+      await this.whatsappController.sendImage(body.phoneNumber, body.base64Image, body.caption);
+      this.ok({},res);
+    } catch (e) {
+        res.send({ valido: false, message: e });
+      }
     });
   }
 }

@@ -1,61 +1,60 @@
-import { Client } from "whatsapp-web.js";
-import   AlphaxLocalAuth  from "../authStrategies/alphaxLocalAuth";
-import fs from "fs";
-import path from "path";
-import Utils from "../utils/utils";
+import { Client, MessageMedia  } from "whatsapp-web.js";
 
-class WhatsappWebJS {
+import WhatsappWebBase from "./whatsappBase";
+import AlphaxLocalAuth from "../../authStrategies/alphaxLocalAuth";
+
+class WhatsappWebJS extends WhatsappWebBase {
   qrCode = "";
   autenticated = false;
 
   _client = null;
 
   constructor() {
-
+    super();
     this._init();
   }
 
-   _init() {
+  _init() {
     this._client = null;
     this._client = new Client({
       authStrategy: new AlphaxLocalAuth(),
       puppeteer: {
         headless: true,
         args: [
-          '--no-sandbox',
-          '--no-experiments',
-          '--hide-scrollbars',
-          '--disable-plugins',
-          '--disable-infobars',
-          '--disable-translate',
-          '--disable-pepper-3d',
-          '--disable-extensions',
-          '--disable-dev-shm-usage',
-          '--disable-notifications',
-          '--disable-setuid-sandbox',
-          '--disable-crash-reporter',
-          '--disable-smooth-scrolling',
-          '--disable-login-animations',
-          '--disable-dinosaur-easter-egg',
-          '--disable-accelerated-2d-canvas',
-          '--disable-rtc-smoothness-algorithm'
+          "--no-sandbox",
+          "--no-experiments",
+          "--hide-scrollbars",
+          "--disable-plugins",
+          "--disable-infobars",
+          "--disable-translate",
+          "--disable-pepper-3d",
+          "--disable-extensions",
+          "--disable-dev-shm-usage",
+          "--disable-notifications",
+          "--disable-setuid-sandbox",
+          "--disable-crash-reporter",
+          "--disable-smooth-scrolling",
+          "--disable-login-animations",
+          "--disable-dinosaur-easter-egg",
+          "--disable-accelerated-2d-canvas",
+          "--disable-rtc-smoothness-algorithm",
         ],
       },
     });
     this.qrCode = "";
     this.autenticated = false;
-    this.generateQrCode();
+    this._generateQrCode();
     this._client
       .initialize()
       .then((e) => console.log("Robo Iniciado"))
       .catch((e) => {
-        console.log('Erro ao iniciar o robo');
+        console.log("Erro ao iniciar o robo");
         console.log(e);
         this._init();
       });
   }
 
-  generateQrCode() {
+  _generateQrCode() {
     this._client.on("qr", (qr) => {
       console.log("Generate qr code");
       this.qrCode = qr;
@@ -76,9 +75,7 @@ class WhatsappWebJS {
     this._client.on("disconnected", async (_) => {
       console.log("disconnected");
       await this._client.destroy();
-      await Utils.delay(2000);
       this._init();
-      // await this._deleteFolders();
       this.autenticated = false;
     });
 
@@ -98,12 +95,7 @@ class WhatsappWebJS {
   async sendMessage(phoneNumber, message) {
     try {
       if (this.autenticated) {
-        let cleanPhoneNumber = phoneNumber.replace(/[()\-\s]/g, "");
-        if (cleanPhoneNumber.length == 11) {
-          cleanPhoneNumber =
-            cleanPhoneNumber.slice(0, 2) + cleanPhoneNumber.slice(3);
-        }
-        let chatId = `55${cleanPhoneNumber}@c.us`;
+        let chatId = this._getChatId(phoneNumber);
         await this._client.sendMessage(chatId, message);
       } else {
         throw new Error(
@@ -115,23 +107,30 @@ class WhatsappWebJS {
     }
   }
 
-  async _deleteFolders() {
+  _getChatId(phoneNumber) {
+    let cleanPhoneNumber = phoneNumber.replace(/[()\-\s]/g, "");
+    if (cleanPhoneNumber.length == 11) {
+      cleanPhoneNumber =
+        cleanPhoneNumber.slice(0, 2) + cleanPhoneNumber.slice(3);
+    }
+    return `55${cleanPhoneNumber}@c.us`;
+  }
+
+  //o arquivo deve estar em base64
+  async sendImage(phoneNumber, base64Image, caption) {
     try {
-      if (
-        this._client.pupBrowser?.isConnected() &&
-        !this._client.pupPage?.isClosed()
-      ) {
-        if (this.autenticated) {
-          await this._client.logout();
-        }
-        await this._client.destroy();
-
+      if (this.autenticated) {
+        console.log('Enviando imagem');
+        let chatId = this._getChatId(phoneNumber);
+        const media = new MessageMedia('image/png', base64Image);
+        await this._client.sendMessage(chatId, media, { caption: caption });
+      } else {
+        throw new Error(
+          "Obrigatório estar autenticado para o envio de mensagem"
+        );
       }
-
-      // this._init();
-      console.log("Pasta apagada com sucesso!");
-    } catch (err) {
-      console.error("Erro ao apagar a pasta:", err);
+    } catch (e) {
+      throw new Error(e.toString());
     }
   }
 }

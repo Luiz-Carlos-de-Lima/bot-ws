@@ -1,7 +1,7 @@
 import moment from "moment";
 
 import Otp from "../models/otpModel";
-import whatsappWebJS from "../services/whatsapp_web";
+import whatsappWebJS from "../services/whatsapp/whatsapp_web";
 import Utils from "../utils/utils";
 
 export default class AuthController {

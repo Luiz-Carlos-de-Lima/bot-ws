@@ -1,4 +1,4 @@
-var mongoose = require('mongoose');
+import mongoose  from 'mongoose';
 
 var OtpSchema = mongoose.Schema({
   code: { type: String, required: true },
@@ -10,4 +10,4 @@ var OtpSchema = mongoose.Schema({
   validade: { type: Date }
 });
 
-module.exports = mongoose.model('otp', OtpSchema);
+export default mongoose.model('otp', OtpSchema);

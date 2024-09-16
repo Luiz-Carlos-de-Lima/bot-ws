@@ -1,28 +1,7 @@
-import whatsappWebJS from "../services/whatsapp_web";
-import Utils from "../utils/utils";
+import whatsappWebJS from "../services/whatsapp/whatsapp_web";
 
 export default class WhatsappController {
   botIniciado = false;
-
-  // async iniciarBot() {
-  //   if (whatsappWebJS.autenticated) {
-  //     return {
-  //       sessaoIniciada: true,
-  //       qrCode: "",
-  //     };
-  //   } else {
-  //     if (!whatsappWebJS.qrCode) {
-  //       console.log("Antes do delay");
-  //       await Utils.delay(2000);
-  //       console.log("Depois do delay");
-  //       return this.iniciarBot();
-  //     }
-  //     return {
-  //       sessaoIniciada: false,
-  //       qrCode: whatsappWebJS.qrCode,
-  //     };
-  //   }
-  // }
 
   async iniciarBot() {
     let contador = 0;
@@ -58,11 +37,14 @@ export default class WhatsappController {
 
   async sendMessage(phoneNumber, message) {
     if (whatsappWebJS.autenticated) {
-      whatsappWebJS.sendMessage(phoneNumber, message);
+      await whatsappWebJS.sendMessage(phoneNumber, message);
     }
   }
 
-  async deleteFolderTeste() {
-    await whatsappWebJS._deleteFolders();
+  async sendImage(phoneNumber, base64Image, caption) {
+    if (whatsappWebJS.autenticated) {
+      await whatsappWebJS.sendImage(phoneNumber, base64Image, caption);
+    }
   }
+
 }
