@@ -46,5 +46,4 @@ export default class WhatsappController {
       await whatsappWebJS.sendImage(phoneNumber, base64Image, caption);
     }
   }
-
 }

@@ -1,4 +1,4 @@
-import { Client, MessageMedia  } from "whatsapp-web.js";
+import { Client, MessageMedia } from "whatsapp-web.js";
 
 import WhatsappWebBase from "./whatsappBase";
 import AlphaxLocalAuth from "../../authStrategies/alphaxLocalAuth";
@@ -120,9 +120,8 @@ class WhatsappWebJS extends WhatsappWebBase {
   async sendImage(phoneNumber, base64Image, caption) {
     try {
       if (this.autenticated) {
-        console.log('Enviando imagem');
         let chatId = this._getChatId(phoneNumber);
-        const media = new MessageMedia('image/png', base64Image);
+        const media = new MessageMedia("image/png", base64Image);
         await this._client.sendMessage(chatId, media, { caption: caption });
       } else {
         throw new Error(
