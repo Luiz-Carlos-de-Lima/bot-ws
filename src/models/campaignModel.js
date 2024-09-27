@@ -22,6 +22,10 @@ const ScheduleSchema = new mongoose.Schema({
     type: String,
     required: true, // Formato esperado: "HH:mm", por exemplo "14:30"
   },
+  enable: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 // Esquema da campanha

@@ -6,6 +6,7 @@ import AlphaxLocalAuth from "../../authStrategies/alphaxLocalAuth";
 class WhatsappWebJS extends WhatsappWebBase {
   qrCode = "";
   autenticated = false;
+  _callback;
 
   _client = null;
 
@@ -54,6 +55,10 @@ class WhatsappWebJS extends WhatsappWebBase {
       });
   }
 
+  setCallbackControlMessage(callback) {
+    this._callback = callback;
+  }
+
   _generateQrCode() {
     this._client.on("qr", (qr) => {
       console.log("Generate qr code");
@@ -80,14 +85,12 @@ class WhatsappWebJS extends WhatsappWebBase {
     });
 
     this._client.on("message", async (msg) => {
-      console.log("MESSAGE RECEIVED", msg);
-
-      if (msg.body === "!ping reply") {
-        // Send a new message as a reply to the current one
-        msg.reply("pong");
-      } else if (msg.body === "!ping") {
-        // Send a new message to the same chat
-        this._client.sendMessage(msg.from, "pong");
+      console.log(typeof this._callback);
+      if (typeof this._callback === "function") {
+        let responseMessage = await this._callback(msg.body);
+        if (responseMessage) {
+          this._client.sendMessage(msg.from, responseMessage);
+        }
       }
     });
   }

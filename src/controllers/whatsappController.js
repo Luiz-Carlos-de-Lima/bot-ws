@@ -1,7 +1,14 @@
 import whatsappWebJS from "../services/whatsapp/whatsapp_web";
+import nlp from "compromise";
+
+import utils from "../utils/utils";
 
 export default class WhatsappController {
   botIniciado = false;
+
+  constructor() {
+    whatsappWebJS.setCallbackControlMessage(this._controlMessage);
+  }
 
   async iniciarBot() {
     let contador = 0;
@@ -33,6 +40,21 @@ export default class WhatsappController {
         contador++;
       }, 2000);
     });
+  }
+
+  async _controlMessage(message) {
+    const doc = nlp(String(message).toLowerCase());
+
+    await utils.delay(2000);
+
+    if (
+      doc.has("cardápio") ||
+      doc.has("cardapio") ||
+      doc.has("menu") ||
+      doc.has("pedido")
+    ) {
+      return "Aqui está o nosso cardápio: https://jclan-app.alphax.jclan.com.br/";
+    }
   }
 
   async sendMessage(phoneNumber, message) {
