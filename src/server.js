@@ -8,6 +8,7 @@ import db from "./config/db";
 import WhatsappRouter from "./routers/whatsappRouter";
 import AuthRouter from "./routers/authRouter";
 import CampaingRouter from "./routers/campaignRouter";
+import AltomaticMessageRouter from "./routers/altomaticMessageRouter";
 
 // Importar cron jobs
 import { scheduleCronJobs } from "./crons/campaigns_cron"; // Importar a função de cron
@@ -16,6 +17,7 @@ import { scheduleCronJobs } from "./crons/campaigns_cron"; // Importar a funçã
 const whatsappRouter = new WhatsappRouter();
 const authRouter = new AuthRouter();
 const campaingRouter = new CampaingRouter();
+const altomaticMessageRouter = new AltomaticMessageRouter();
 
 const app = express();
 const env = dotenv.config().parsed;
@@ -41,6 +43,7 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use("/", whatsappRouter.router);
 app.use("/", authRouter.router);
 app.use("/", campaingRouter.router);
+app.use("/", altomaticMessageRouter.router);
 
 // Conectar ao banco de dados e iniciar o servidor
 db(async (_) => {

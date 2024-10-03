@@ -1,7 +1,7 @@
 import { Router } from "express";
 import WhatsappController from "../controllers/whatsappController";
 import BaseRouter from "./baseRouter";
-export default class WhatsappRouter extends BaseRouter  {
+export default class WhatsappRouter extends BaseRouter {
   whatsappController = null;
   router = new Router();
 
@@ -11,6 +11,7 @@ export default class WhatsappRouter extends BaseRouter  {
     this.iniciarRobo();
     this.sendMessage();
     this.sendImage();
+    this.disconnect();
   }
 
   iniciarRobo() {
@@ -27,10 +28,9 @@ export default class WhatsappRouter extends BaseRouter  {
         console.log(body);
         if (body.phoneNumber && body.message) {
           this.whatsappController.sendMessage(body.phoneNumber, body.message);
-          this.ok({},res);
+          this.ok({}, res);
         } else {
           this.fail("telefone e mensagem são obrigatório", res);
-
         }
       } catch (e) {
         this.fail(e, res);
@@ -41,21 +41,36 @@ export default class WhatsappRouter extends BaseRouter  {
   sendImage() {
     this.router.post("/sendImage", async (req, res) => {
       try {
-      let body = req.body;
+        let body = req.body;
 
-      if (!body?.phoneNumber) {
-        this.fail("telefone e mensagem são obrigatório.", res);
-        return;
+        if (!body?.phoneNumber) {
+          this.fail("telefone e mensagem são obrigatório.", res);
+          return;
+        }
+
+        if (!body?.base64Image) {
+          this.fail("A imagem em formato base64 é obrigatório.", res);
+          return;
+        }
+
+        await this.whatsappController.sendImage(
+          body.phoneNumber,
+          body.base64Image,
+          body.caption
+        );
+        this.ok({}, res);
+      } catch (e) {
+        res.send({ valido: false, message: e });
       }
+    });
+  }
 
-      if (!body?.base64Image) {
-        this.fail( "A imagem em formato base64 é obrigatório.", res);
-        return;
-      }
-
-      await this.whatsappController.sendImage(body.phoneNumber, body.base64Image, body.caption);
-      this.ok({},res);
-    } catch (e) {
+  disconnect() {
+    this.router.post("/disconnectWhatsApp", async (_, res) => {
+      try {
+        await this.whatsappController.disconnect();
+        this.ok({}, res);
+      } catch (e) {
         res.send({ valido: false, message: e });
       }
     });

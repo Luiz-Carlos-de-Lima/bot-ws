@@ -79,13 +79,10 @@ class WhatsappWebJS extends WhatsappWebBase {
     });
     this._client.on("disconnected", async (_) => {
       console.log("disconnected");
-      await this._client.destroy();
-      this._init();
-      this.autenticated = false;
+      await this._disableValuesWhatsapp();
     });
 
     this._client.on("message", async (msg) => {
-      console.log(typeof this._callback);
       if (typeof this._callback === "function") {
         let responseMessage = await this._callback(msg.body);
         if (responseMessage) {
@@ -95,11 +92,19 @@ class WhatsappWebJS extends WhatsappWebBase {
     });
   }
 
+  async _disableValuesWhatsapp() {
+    await this._client.destroy();
+    this._init();
+    this.autenticated = false;
+  }
+
   async sendMessage(phoneNumber, message) {
     try {
       if (this.autenticated) {
-        let chatId = this._getChatId(phoneNumber);
-        await this._client.sendMessage(chatId, message);
+        let chatId = await this._getChatId(phoneNumber);
+        if (chatId) {
+          await this._client.sendMessage(chatId, message);
+        }
       } else {
         throw new Error(
           "Obrigatório estar autenticado para o envio de mensagem"
@@ -110,22 +115,23 @@ class WhatsappWebJS extends WhatsappWebBase {
     }
   }
 
-  _getChatId(phoneNumber) {
-    let cleanPhoneNumber = phoneNumber.replace(/[()\-\s]/g, "");
-    if (cleanPhoneNumber.length == 11) {
-      cleanPhoneNumber =
-        cleanPhoneNumber.slice(0, 2) + cleanPhoneNumber.slice(3);
+  async _getChatId(phoneNumber) {
+    try {
+      let phoneId = await this._client.getNumberId(phoneNumber);
+      return phoneId ? phoneId._serialized : null;
+    } catch (e) {
+      return null;
     }
-    return `55${cleanPhoneNumber}@c.us`;
   }
 
-  //o arquivo deve estar em base64
   async sendImage(phoneNumber, base64Image, caption) {
     try {
       if (this.autenticated) {
-        let chatId = this._getChatId(phoneNumber);
-        const media = new MessageMedia("image/png", base64Image);
-        await this._client.sendMessage(chatId, media, { caption: caption });
+        let chatId = await this._getChatId(phoneNumber);
+        if (chatId) {
+          const media = new MessageMedia("image/png", base64Image);
+          await this._client.sendMessage(chatId, media, { caption: caption });
+        }
       } else {
         throw new Error(
           "Obrigatório estar autenticado para o envio de mensagem"
@@ -134,6 +140,11 @@ class WhatsappWebJS extends WhatsappWebBase {
     } catch (e) {
       throw new Error(e.toString());
     }
+  }
+
+  async disconnect() {
+    await this._client.logout();
+    await this._disableValuesWhatsapp();
   }
 }
 

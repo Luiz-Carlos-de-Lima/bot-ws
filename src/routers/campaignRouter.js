@@ -60,7 +60,6 @@ export default class CampaingRouter extends BaseRouter {
     this.router.get("/getCampaign", async (req, res) => {
       try {
         let listCampaign = [];
-        console.log(req.query.id);
         if (req.query.id) {
           let campaign = await this.campaignController.getCampaignById(
             req.query.id
