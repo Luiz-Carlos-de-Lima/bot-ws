@@ -20,7 +20,7 @@ export default class AltomaticMessageRouter extends BaseRouter {
       try {
         let data;
         if (req.query.id) {
-          data = await this.altomaticMessageController.getMessageById(
+          data = await this.altomaticMessageController.fetchMessages(
             req.query.id
           );
         } else {

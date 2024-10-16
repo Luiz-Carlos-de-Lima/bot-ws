@@ -1,15 +1,36 @@
 import whatsappWebJS from "../services/whatsapp/whatsapp_web";
-
 import AltomaticMessageController from "./altomaticMessageController";
+import socket from "../services/socketIO/socket";
 
 export default class WhatsappController {
   botIniciado = false;
   altomaticMessageController = new AltomaticMessageController();
 
   constructor() {
-    whatsappWebJS.setCallbackControlMessage(
-      this.altomaticMessageController.controlMessage
-    );
+    whatsappWebJS.onMessage((message) => {
+      this.altomaticMessageController.controlMessage(message.body);
+      socket.io.emit("message", message);
+    });
+
+    whatsappWebJS.onQrCode((qrCode) => {
+      socket.io.emit("qrCode", qrCode);
+    });
+
+    whatsappWebJS.onAuthenticated(() => {
+      socket.io.emit("authenticated");
+    });
+
+    whatsappWebJS.onDisconnected(() => {
+      socket.io.emit("logout");
+    });
+
+    whatsappWebJS.onReady(() => {
+      socket.io.emit("ready");
+    });
+
+    whatsappWebJS.onMessageAck((message) => {
+      socket.io.emit("messageAck", message);
+    });
   }
 
   async iniciarBot() {
@@ -59,6 +80,26 @@ export default class WhatsappController {
   async disconnect() {
     if (whatsappWebJS.autenticated) {
       await whatsappWebJS.disconnect();
+    }
+  }
+
+  async getChats() {
+    if (whatsappWebJS.autenticated) {
+      let listChats = await whatsappWebJS.getChats();
+      return listChats;
+    }
+  }
+
+  async getProfilePicUrl(chatId) {
+    let image = await whatsappWebJS.getProfilePicUrl(chatId);
+    return image;
+  }
+
+  async fetchMessages(chatId) {
+    if (whatsappWebJS.autenticated) {
+      let listMessage = await whatsappWebJS.fetchMessages(chatId);
+
+      return listMessage;
     }
   }
 }

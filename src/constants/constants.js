@@ -20,6 +20,38 @@ class Constants {
     FAZER_PEDIDO: "FAZER_PEDIDO",
   };
 
+  WHATSAPP_EVENTS = {
+    AUTHENTICATED: "authenticated",
+    AUTHENTICATION_FAILURE: "authentication_failure",
+    READY: "ready",
+    CHAT_REMOVED: "chat_removed",
+    CHAT_ARCHIVED: "chat_archived",
+    MESSAGE_RECEIVED: "message_received",
+    MESSAGE_CIPHERTEXT: "message_ciphertext",
+    MESSAGE_CREATE: "message_create",
+    MESSAGE_REVOKED_EVERYONE: "message_revoked_everyone",
+    MESSAGE_REVOKED_ME: "message_revoked_me",
+    MESSAGE_ACK: "message_ack",
+    MESSAGE_EDIT: "message_edit",
+    UNREAD_COUNT: "unread_count",
+    MESSAGE_REACTION: "message_reaction",
+    MEDIA_UPLOADED: "media_uploaded",
+    CONTACT_CHANGED: "contact_changed",
+    GROUP_JOIN: "group_join",
+    GROUP_LEAVE: "group_leave",
+    GROUP_ADMIN_CHANGED: "group_admin_changed",
+    GROUP_MEMBERSHIP_REQUEST: "group_membership_request",
+    GROUP_UPDATE: "group_update",
+    QR_RECEIVED: "qr_received",
+    LOADING_SCREEN: "loading_screen",
+    DISCONNECTED: "disconnected",
+    STATE_CHANGED: "state_changed",
+    BATTERY_CHANGED: "battery_changed",
+    INCOMING_CALL: "incoming_call",
+    REMOTE_SESSION_SAVED: "remote_session_saved",
+    VOTE_UPDATE: "vote_update",
+  };
+
   // ABBREVIATED_WORDS = {
   //   qndo: "quando",
   //   pço: "preço",

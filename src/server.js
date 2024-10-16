@@ -2,8 +2,10 @@
 import express from "express";
 import dotenv from "dotenv";
 import moment from "moment";
+import http from "http"; // Adicionar o pacote HTTP padrão para criar o servidor
 
 import db from "./config/db";
+import socketIO from "./services/socketIO/socket";
 // Import das rotas
 import WhatsappRouter from "./routers/whatsappRouter";
 import AuthRouter from "./routers/authRouter";
@@ -23,6 +25,12 @@ const app = express();
 const env = dotenv.config().parsed;
 
 const PORT = env.PORT;
+
+// Criar o servidor HTTP
+const server = http.createServer(app);
+
+// Inicializar o Socket.IO com o servidor HTTP criado
+socketIO.init(server);
 
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -47,9 +55,10 @@ app.use("/", altomaticMessageRouter.router);
 
 // Conectar ao banco de dados e iniciar o servidor
 db(async (_) => {
-  app.listen(PORT, () => {
+  // Iniciar o servidor HTTP e Socket.IO juntos
+  server.listen(PORT, () => {
     let dataTemp = moment().format("DD/MM/YYYY HH:mm:ss");
-    console.log("Servidor iniciado!", String(dataTemp));
+    console.log(`Servidor iniciado na porta ${PORT}!`, String(dataTemp));
 
     // Iniciar os cron jobs
     scheduleCronJobs();

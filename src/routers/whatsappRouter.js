@@ -12,6 +12,9 @@ export default class WhatsappRouter extends BaseRouter {
     this.sendMessage();
     this.sendImage();
     this.disconnect();
+    this.getChats();
+    this.fetchMessages();
+    this.getProfilePicUrl();
   }
 
   iniciarRobo() {
@@ -72,6 +75,63 @@ export default class WhatsappRouter extends BaseRouter {
         this.ok({}, res);
       } catch (e) {
         res.send({ valido: false, message: e });
+      }
+    });
+  }
+
+  getChats() {
+    this.router.get("/getChats", async (_, res) => {
+      try {
+        let chats = await this.whatsappController.getChats();
+
+        this.ok(chats, res);
+      } catch (e) {
+        console.log(e);
+        this.fail(e, res);
+      }
+    });
+  }
+
+  //Query da requisição
+  //page
+  //limit
+  //chatId
+  fetchMessages() {
+    this.router.get("/fetchMessages", async (req, res) => {
+      try {
+        let query = req.query;
+
+        if (!query.chatId) {
+          throw new Error("chatId é obrigatório nos argumentos.");
+        }
+
+        let listMessage = await this.whatsappController.fetchMessages(
+          query.chatId
+        );
+        this.ok(listMessage, res);
+      } catch (e) {
+        console.log(e);
+        this.fail(e, res);
+      }
+    });
+  }
+
+  getProfilePicUrl() {
+    this.router.get("/getProfilePicUrl", async (req, res) => {
+      try {
+        let query = req.query;
+
+        if (!query.chatId) {
+          throw new Error("chatId é obrigatório nos argumentos.");
+        }
+
+        let image = await this.whatsappController.getProfilePicUrl(
+          query.chatId
+        );
+        this.ok(image, res);
+      } catch (e) {
+        console.log(e);
+        this.fail(null, res);
       }
     });
   }
