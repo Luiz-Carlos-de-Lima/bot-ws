@@ -475,6 +475,45 @@ class WhatsappWebJS extends WhatsappWebBase {
 
     return contacts;
   }
+
+  async archiveChat(chatId) {
+    if (this.autenticated) {
+      let chat = await this._client.getChatById(chatId);
+      if (chat.archived) {
+        await chat.unarchive();
+      } else {
+        await chat.archive();
+      }
+
+      return chat.archived;
+    }
+
+    return false;
+  }
+
+  async pinnedChat(chatId) {
+    if (this.autenticated) {
+      let chat = await this._client.getChatById(chatId);
+      if (chat.pinned) {
+        await chat.unpin();
+      } else {
+        await chat.pin();
+      }
+
+      return chat.pinned;
+    }
+
+    return false;
+  }
+
+  async deleteChat(chatId) {
+    if (this.autenticated) {
+      let chat = await this._client.getChatById(chatId);
+      return await chat.delete();
+    }
+
+    return false;
+  }
 }
 
 export default new WhatsappWebJS();

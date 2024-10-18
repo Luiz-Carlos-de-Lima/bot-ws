@@ -7,8 +7,10 @@ export default class WhatsappController {
   altomaticMessageController = new AltomaticMessageController();
 
   constructor() {
-    whatsappWebJS.onMessage((message) => {
+    whatsappWebJS.onMessage(async (message) => {
       this.altomaticMessageController.controlMessage(message.body);
+      let listChat = await this.getChats();
+      socket.io.emit("listChats", listChat);
       socket.io.emit("message", message);
     });
 
@@ -26,11 +28,26 @@ export default class WhatsappController {
 
     whatsappWebJS.onReady(() => {
       socket.io.emit("ready");
+      console.log("Ouvindo chatArchived");
+      socket.io.on("chatArchived", async (chatId) => {
+        console.log("Aquivando chat");
+        await this.archiveChat(chatId);
+      });
     });
 
-    whatsappWebJS.onMessageAck((message) => {
-      socket.io.emit("messageAck", message);
+    whatsappWebJS.onMessageAck(async (_) => {
+      let listChat = await this.getChats();
+      socket.io.emit("listChats", listChat);
     });
+
+    whatsappWebJS.onChatArchived(async (_) => {
+      let listChat = await this.getChats();
+      socket.io.emit("listChats", listChat);
+    });
+
+    // socket.io.on("chatArchived", async (chatId) => {
+    //   await this.archiveChat(chatId);
+    // });
   }
 
   async iniciarBot() {
@@ -100,6 +117,24 @@ export default class WhatsappController {
       let listMessage = await whatsappWebJS.fetchMessages(chatId);
 
       return listMessage;
+    }
+  }
+
+  async archiveChat(chatId) {
+    if (whatsappWebJS.autenticated) {
+      await whatsappWebJS.archiveChat(chatId);
+    }
+  }
+
+  async pinChat(chatId) {
+    if (whatsappWebJS.autenticated) {
+      await whatsappWebJS.pinnedChat(chatId);
+    }
+  }
+
+  async deleteChat(chatId) {
+    if (whatsappWebJS.autenticated) {
+      await whatsappWebJS.deleteChat(chatId);
     }
   }
 }

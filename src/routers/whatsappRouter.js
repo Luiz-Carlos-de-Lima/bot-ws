@@ -15,6 +15,9 @@ export default class WhatsappRouter extends BaseRouter {
     this.getChats();
     this.fetchMessages();
     this.getProfilePicUrl();
+    this.archiveChat();
+    this.pinChat();
+    this.deleteChat();
   }
 
   iniciarRobo() {
@@ -92,10 +95,6 @@ export default class WhatsappRouter extends BaseRouter {
     });
   }
 
-  //Query da requisição
-  //page
-  //limit
-  //chatId
   fetchMessages() {
     this.router.get("/fetchMessages", async (req, res) => {
       try {
@@ -132,6 +131,60 @@ export default class WhatsappRouter extends BaseRouter {
       } catch (e) {
         console.log(e);
         this.fail(null, res);
+      }
+    });
+  }
+
+  archiveChat() {
+    this.router.post("/archiveChat", async (req, res) => {
+      try {
+        let body = req.body;
+
+        if (!body.chatId) {
+          throw new Error("chatId é obrigatório.");
+        }
+
+        let chat = await this.whatsappController.archiveChat(body.chatId);
+        this.ok(chat, res);
+      } catch (e) {
+        console.log(e);
+        this.fail(e, res);
+      }
+    });
+  }
+
+  pinChat() {
+    this.router.post("/pinChat", async (req, res) => {
+      try {
+        let body = req.body;
+
+        if (!body.chatId) {
+          throw new Error("chatId é obrigatório.");
+        }
+
+        let chat = await this.whatsappController.pinChat(body.chatId);
+        this.ok(chat, res);
+      } catch (e) {
+        console.log(e);
+        this.fail(e, res);
+      }
+    });
+  }
+
+  deleteChat() {
+    this.router.post("/deleteChat", async (req, res) => {
+      try {
+        let body = req.body;
+
+        if (!body.chatId) {
+          throw new Error("chatId é obrigatório.");
+        }
+
+        let chat = await this.whatsappController.deleteChat(body.chatId);
+        this.ok(chat, res);
+      } catch (e) {
+        console.log(e);
+        this.fail(e, res);
       }
     });
   }
