@@ -1,6 +1,8 @@
 import { Client, MessageMedia } from "whatsapp-web.js";
+import puppeteer from "puppeteer";
 import WhatsappWebBase from "./whatsappBase";
 import AlphaxLocalAuth from "../../authStrategies/alphaxLocalAuth";
+import Utils from "../../utils/utils";
 
 class WhatsappWebJS extends WhatsappWebBase {
   qrCode = "";
@@ -35,6 +37,7 @@ class WhatsappWebJS extends WhatsappWebBase {
   _callbackIncomingCall;
   _callbackRemoteSessionSaved;
   _callbackVoteUpdate;
+  _browser;
 
   _client = new Client();
 
@@ -43,11 +46,9 @@ class WhatsappWebJS extends WhatsappWebBase {
     this._init();
   }
 
-  _init() {
-    this._client = null;
-    this._client = new Client({
-      authStrategy: new AlphaxLocalAuth(),
-      puppeteer: {
+  async _startBrowser() {
+    if (!this._browser) {
+      this._browser = await puppeteer.launch({
         headless: true,
         args: [
           "--no-sandbox",
@@ -67,8 +68,52 @@ class WhatsappWebJS extends WhatsappWebBase {
           "--disable-dinosaur-easter-egg",
           "--disable-accelerated-2d-canvas",
           "--disable-rtc-smoothness-algorithm",
+          "--autoplay-policy=user-gesture-required",
+          "--disable-background-networking",
+          "--disable-background-timer-throttling",
+          "--disable-backgrounding-occluded-windows",
+          "--disable-breakpad",
+          "--disable-client-side-phishing-detection",
+          "--disable-component-update",
+          "--disable-default-apps",
+          "--disable-domain-reliability",
+          "--disable-features=AudioServiceOutOfProcess",
+          "--disable-gpu",
+          "--disable-hang-monitor",
+          "--disable-ipc-flooding-protection",
+          "--disable-offer-store-unmasked-wallet-cards",
+          "--disable-popup-blocking",
+          "--disable-print-preview",
+          "--disable-prompt-on-repost",
+          "--disable-renderer-backgrounding",
+          "--disable-speech-api",
+          "--disable-sync",
+          "--ignore-gpu-blacklist",
+          "--metrics-recording-only",
+          "--mute-audio",
+          "--no-default-browser-check",
+          "--no-first-run",
+          "--no-pings",
+          "--no-zygote",
+          "--password-store=basic",
+          "--use-gl=swiftshader",
+          "--use-mock-keychain",
+          // "--single-process", //add teste.
         ],
-      },
+      });
+    }
+    return this._browser;
+  }
+
+  async _init() {
+    const browser = await this._startBrowser();
+
+    this._client = null;
+    this._client = new Client({
+      authStrategy: new AlphaxLocalAuth(),
+      takeoverOnConflict: true,
+      browserWSEndpoint: browser.wsEndpoint(),
+      qrMaxRetries: 5,
     });
     this.qrCode = "";
     this.autenticated = false;
@@ -231,6 +276,10 @@ class WhatsappWebJS extends WhatsappWebBase {
       }
     });
 
+    this._client.on("message_received", (msg) => {
+      console.log("mensagem recebida", msg);
+    });
+
     this._client.on("message_revoked_everyone", (msg) => {
       console.log("Mensagem revogada para todos", msg);
       if (typeof this._callbackMessageRevokedEveryone === "function") {
@@ -245,10 +294,15 @@ class WhatsappWebJS extends WhatsappWebBase {
       }
     });
 
-    this._client.on("message_ack", (msg) => {
+    this._client.on("message_ack", async (msg) => {
       console.log("Confirmação de mensagem", msg);
       if (typeof this._callbackMessageAck === "function") {
-        this._callbackMessageAck(msg);
+        let message = { ...msg, quotedMsg: null };
+        if (message.hasQuotedMsg) {
+          let quotedMsg = await msg.getQuotedMessage();
+          message.quotedMsg = quotedMsg;
+        }
+        this._callbackMessageAck(message);
       }
     });
 
@@ -372,9 +426,14 @@ class WhatsappWebJS extends WhatsappWebBase {
 
     this._client.on("message", async (msg) => {
       if (typeof this._callbackMessage === "function") {
-        let responseMessage = await this._callbackMessage(msg);
+        let message = { ...msg, quotedMsg: null };
+        if (message.hasQuotedMsg) {
+          let quotedMsg = await msg.getQuotedMessage();
+          message.quotedMsg = quotedMsg;
+        }
+        let responseMessage = await this._callbackMessage(message);
         if (responseMessage) {
-          this._client.sendMessage(msg.from, responseMessage);
+          this._client.sendMessage(message.from, responseMessage);
         }
       }
     });
@@ -391,7 +450,8 @@ class WhatsappWebJS extends WhatsappWebBase {
       if (this.autenticated) {
         let chatId = await this._getChatId(phoneNumber);
         if (chatId) {
-          await this._client.sendMessage(chatId, message);
+          await this.stopStateTyping(chatId);
+          return await this._client.sendMessage(chatId, message);
         }
       } else {
         throw new Error(
@@ -400,6 +460,28 @@ class WhatsappWebJS extends WhatsappWebBase {
       }
     } catch (e) {
       throw new Error(e.toString());
+    }
+  }
+
+  async replyMessage(content, chatId, messageId) {
+    try {
+      let editedMessage = null;
+      if (this.autenticated) {
+        let message = await this.getMessage(messageId);
+
+        if (message != null) {
+          let replyMessage = await message.reply(content, chatId);
+          let quotedMsg = {};
+          if (replyMessage.hasQuotedMsg) {
+            quotedMsg.quotedMsg = message;
+          }
+          return { ...replyMessage, ...quotedMsg };
+        }
+      }
+
+      return editedMessage;
+    } catch (_) {
+      return null;
     }
   }
 
@@ -418,11 +500,65 @@ class WhatsappWebJS extends WhatsappWebBase {
         let chatId = await this._getChatId(phoneNumber);
         if (chatId) {
           const media = new MessageMedia("image/png", base64Image);
-          await this._client.sendMessage(chatId, media, { caption: caption });
+          return await this._client.sendMessage(chatId, media, {
+            caption: caption,
+          });
         }
       } else {
         throw new Error(
           "Obrigatório estar autenticado para o envio de mensagem"
+        );
+      }
+    } catch (e) {
+      throw new Error(e.toString());
+    }
+  }
+
+  async sendMedia(chatId, base64Data, caption, mimeType) {
+    try {
+      if (this.autenticated) {
+        if (chatId) {
+          const media = new MessageMedia(mimeType, base64Data);
+          return await this._client.sendMessage(chatId, media, {
+            caption: caption,
+          });
+        }
+      } else {
+        throw new Error(
+          "Obrigatório estar autenticado para o envio de mensagem de media"
+        );
+      }
+    } catch (e) {
+      throw new Error(e.toString());
+    }
+  }
+
+  async sendContact(chatId, contacts) {
+    try {
+      if (this.autenticated) {
+        if (chatId) {
+          let listContacts = [];
+          let promises = contacts.map((contact) =>
+            new Promise(async (resolve) => {
+              if (contact != null && contact.id != null) {
+                let newContact = await this.getContactById(
+                  contact.id._serialized
+                );
+                resolve(newContact);
+              }
+            }).then((contact) => listContacts.push(contact))
+          );
+          await Promise.all(promises);
+
+          if (listContacts.length == 1) {
+            return await this._client.sendMessage(chatId, listContacts[0]);
+          }
+
+          return await this._client.sendMessage(chatId, listContacts);
+        }
+      } else {
+        throw new Error(
+          "Obrigatório estar autenticado para o envio de contatos"
         );
       }
     } catch (e) {
@@ -447,23 +583,87 @@ class WhatsappWebJS extends WhatsappWebBase {
   async getChats() {
     let chats = [];
     if (this.autenticated) {
-      chats = await this._client.getChats();
-    }
+      let promises = [];
+      let chatsTemp = await this._client.getChats();
+      promises = chatsTemp
+        .filter((chat) => chat.lastMessage)
+        .map((chat) =>
+          new Promise(async (resolve) => {
+            let chatTemp = JSON.parse(JSON.stringify(chat));
+            if (
+              chat.lastMessage.type == "gp2" ||
+              chat.lastMessage.type.toString().includes("notification") ||
+              chat.lastMessage.type == "call_log"
+            ) {
+              let listMessage = await chat.fetchMessages({
+                limit: 2,
+              });
+              chatTemp.lastMessage = listMessage.shift();
+            }
+            resolve(chatTemp);
+          }).then((chat) => {
+            chats.push(chat);
+          })
+        );
 
+      await Promise.all(promises);
+    }
     return chats;
   }
 
   async fetchMessages(chatId) {
-    let chatMessage = [];
+    try {
+      let chatMessage = [];
+      let promises = [];
 
-    if (this.autenticated) {
-      let chat = await this._client.getChatById(chatId);
-      chatMessage = await chat.fetchMessages({
-        limit: 50,
-      });
+      if (this.autenticated) {
+        let chat = await this._client.getChatById(chatId);
+        let listMessage = await chat.fetchMessages({
+          limit: 50,
+        });
+
+        promises = listMessage
+          .filter((message) => message.type !== "call_log")
+          .map(
+            (message) =>
+              new Promise(async (resolve) => {
+                try {
+                  if (message.hasQuotedMsg) {
+                    await message.getQuotedMessage().then((value) => {
+                      message["quotedMsg"] = value;
+                    });
+                  }
+
+                  resolve(message);
+                } catch (_) {
+                  resolve(message);
+                }
+              })
+          );
+
+        chatMessage = await Promise.all(promises);
+      }
+
+      return chatMessage;
+    } catch (_) {
+      return [];
     }
+  }
 
-    return chatMessage;
+  async getMessageMedia(messageId) {
+    try {
+      if (this.autenticated) {
+        if (messageId) {
+          let message = await this._client.getMessageById(messageId);
+          if (message.hasMedia) {
+            return await message.downloadMedia();
+          }
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 
   async getContacts() {
@@ -473,46 +673,248 @@ class WhatsappWebJS extends WhatsappWebBase {
       contacts = await this._client.getContacts();
     }
 
-    return contacts;
+    return contacts
+      .filter(
+        (contact) =>
+          contact != null &&
+          contact.id != null &&
+          contact.id.server !== "lid" &&
+          contact.isUser &&
+          (contact.isMe || contact.isMyContact) &&
+          contact.isWAContact &&
+          !contact.isGroup
+      )
+      .sort((a, b) => {
+        let nameA = a.name || "";
+        let nameB = b.name || "";
+        if (a.isMe && !b.isMe) return -1;
+        if (Utils.isNumber(nameA) && !Utils.isNumber(nameB)) return -1;
+        if (!Utils.isNumber(nameA) && Utils.isNumber(nameB)) return 1;
+
+        if (Utils.isSpecialChar(nameA) && !Utils.isSpecialChar(nameB))
+          return -1;
+        if (!Utils.isSpecialChar(nameA) && Utils.isSpecialChar(nameB)) return 1;
+
+        return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
+      });
+  }
+
+  async getChatById(chatId) {
+    let chat = null;
+    if (this.autenticated) {
+      chat = await this._client.getChatById(chatId);
+    }
+
+    return chat;
+  }
+
+  async getContactById(contactId) {
+    let contact = null;
+    if (this.autenticated) {
+      contact = await this._client.getContactById(contactId);
+    }
+
+    return contact;
   }
 
   async archiveChat(chatId) {
+    let archived = false;
     if (this.autenticated) {
-      let chat = await this._client.getChatById(chatId);
+      let chat = await this.getChatById(chatId);
       if (chat.archived) {
-        await chat.unarchive();
+        archived = await chat.unarchive();
       } else {
-        await chat.archive();
+        archived = await chat.archive();
       }
-
-      return chat.archived;
     }
 
-    return false;
+    return archived;
   }
 
   async pinnedChat(chatId) {
+    let pinned = false;
     if (this.autenticated) {
-      let chat = await this._client.getChatById(chatId);
+      let chat = await this.getChatById(chatId);
       if (chat.pinned) {
-        await chat.unpin();
+        pinned = await chat.unpin();
       } else {
-        await chat.pin();
+        pinned = await chat.pin();
       }
-
-      return chat.pinned;
     }
 
-    return false;
+    return pinned;
   }
 
   async deleteChat(chatId) {
+    let deleted = false;
     if (this.autenticated) {
-      let chat = await this._client.getChatById(chatId);
-      return await chat.delete();
+      let chat = await this.getChatById(chatId);
+      deleted = await chat.delete();
     }
 
-    return false;
+    return deleted;
+  }
+
+  async markUnread(chatId) {
+    let unreadCount = -1;
+    if (this.autenticated) {
+      let chat = await this.getChatById(chatId);
+      await chat.markUnread();
+      unreadCount = chat.unreadCount;
+    }
+
+    return unreadCount;
+  }
+
+  async sendSeen(chatId) {
+    let sendSen = 1;
+    if (this.autenticated) {
+      let chat = await this.getChatById(chatId);
+      await chat.sendSeen();
+      sendSen = chat.unreadCount;
+    }
+
+    return sendSen;
+  }
+
+  async getMessage(messageId) {
+    try {
+      if (messageId) {
+        let message = await this._client.getMessageById(messageId);
+        return message;
+      }
+
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async pinMessage(messageId, duration) {
+    try {
+      let pinned = false;
+      if (this.autenticated) {
+        let message = await this.getMessage(messageId);
+
+        if (message != null) {
+          pinned = await message.pin(duration);
+        }
+      }
+
+      return pinned;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async reactMessage(messageId, reaction) {
+    try {
+      let reactionMessage = false;
+      if (this.autenticated) {
+        let message = await this.getMessage(messageId);
+
+        if (message != null) {
+          await message.react(reaction);
+          reactionMessage = true;
+        }
+      }
+
+      return reactionMessage;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async deleteMessage(messageId, everyone) {
+    try {
+      let deletedMessage = false;
+      if (this.autenticated) {
+        let message = await this.getMessage(messageId);
+        if (message != null) {
+          await message.delete(everyone);
+          return true;
+        }
+      }
+
+      return deletedMessage;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async editMessage(messageId, content) {
+    try {
+      let editedMessage = null;
+      if (this.autenticated) {
+        let message = await this.getMessage(messageId);
+
+        if (message != null) {
+          return await message.edit(content);
+        }
+      }
+
+      return editedMessage;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async forwardMessage(messageId, chatIdForward) {
+    try {
+      let forward = false;
+      if (this.autenticated) {
+        let message = await this.getMessage(messageId);
+
+        if (message != null) {
+          await message.forward(chatIdForward);
+          forward = true;
+        }
+      }
+
+      return forward;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async clearMessage(chatId) {
+    let clearMessage = false;
+    if (this.autenticated) {
+      let chat = await this.getChatById(chatId);
+      clearMessage = await chat.clearMessages();
+    }
+
+    return clearMessage;
+  }
+
+  async sendStateTyping(chatId) {
+    try {
+      let sendStateTyping = false;
+      if (this.autenticated) {
+        let chat = await this.getChatById(chatId);
+        await chat.sendStateTyping();
+        sendStateTyping = true;
+      }
+
+      return sendStateTyping;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async stopStateTyping(chatId) {
+    try {
+      let sendStateTyping = false;
+      if (this.autenticated) {
+        let chat = await this.getChatById(chatId);
+        console.log("chat clear Message", chat);
+        sendStateTyping = await chat.clearState();
+      }
+
+      return sendStateTyping;
+    } catch (_) {
+      return false;
+    }
   }
 }
 

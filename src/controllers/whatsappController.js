@@ -26,28 +26,17 @@ export default class WhatsappController {
       socket.io.emit("logout");
     });
 
-    whatsappWebJS.onReady(() => {
-      socket.io.emit("ready");
-      console.log("Ouvindo chatArchived");
-      socket.io.on("chatArchived", async (chatId) => {
-        console.log("Aquivando chat");
-        await this.archiveChat(chatId);
-      });
+    whatsappWebJS.onMessageAck(async (message) => {
+      socket.io.emit("messageAck", message);
     });
 
-    whatsappWebJS.onMessageAck(async (_) => {
-      let listChat = await this.getChats();
-      socket.io.emit("listChats", listChat);
+    whatsappWebJS.onChatArchived(async (chat) => {
+      socket.io.emit("chatArchived", chat);
     });
 
-    whatsappWebJS.onChatArchived(async (_) => {
-      let listChat = await this.getChats();
-      socket.io.emit("listChats", listChat);
+    whatsappWebJS.onUnreadCount(async (chat) => {
+      socket.io.emit("unreadCount", chat);
     });
-
-    // socket.io.on("chatArchived", async (chatId) => {
-    //   await this.archiveChat(chatId);
-    // });
   }
 
   async iniciarBot() {
@@ -82,15 +71,42 @@ export default class WhatsappController {
     });
   }
 
+  async replyMessage(content, chatId, messageId) {
+    if (whatsappWebJS.autenticated) {
+      return await whatsappWebJS.replyMessage(content, chatId, messageId);
+    }
+
+    return null;
+  }
+
   async sendMessage(phoneNumber, message) {
     if (whatsappWebJS.autenticated) {
-      await whatsappWebJS.sendMessage(phoneNumber, message);
+      return await whatsappWebJS.sendMessage(phoneNumber, message);
     }
+
+    return null;
   }
 
   async sendImage(phoneNumber, base64Image, caption) {
     if (whatsappWebJS.autenticated) {
-      await whatsappWebJS.sendImage(phoneNumber, base64Image, caption);
+      return await whatsappWebJS.sendImage(phoneNumber, base64Image, caption);
+    }
+  }
+
+  async sendMedia(chatId, base64Media, caption, mimeType) {
+    if (whatsappWebJS.autenticated) {
+      return await whatsappWebJS.sendMedia(
+        chatId,
+        base64Media,
+        caption,
+        mimeType
+      );
+    }
+  }
+
+  async sendContact(chatId, contacts) {
+    if (whatsappWebJS.autenticated) {
+      return await whatsappWebJS.sendContact(chatId, contacts);
     }
   }
 
@@ -104,6 +120,27 @@ export default class WhatsappController {
     if (whatsappWebJS.autenticated) {
       let listChats = await whatsappWebJS.getChats();
       return listChats;
+    }
+  }
+
+  async getContacts() {
+    if (whatsappWebJS.autenticated) {
+      let listContacts = await whatsappWebJS.getContacts();
+      return listContacts;
+    }
+  }
+
+  async getChatById(chatId) {
+    if (whatsappWebJS.autenticated) {
+      let chat = await whatsappWebJS.getChatById(chatId);
+      return chat;
+    }
+  }
+
+  async getContactById(contactId) {
+    if (whatsappWebJS.autenticated) {
+      let contact = await whatsappWebJS.getContactById(contactId);
+      return contact;
     }
   }
 
@@ -122,19 +159,113 @@ export default class WhatsappController {
 
   async archiveChat(chatId) {
     if (whatsappWebJS.autenticated) {
-      await whatsappWebJS.archiveChat(chatId);
+      return await whatsappWebJS.archiveChat(chatId);
     }
+
+    return false;
   }
 
   async pinChat(chatId) {
     if (whatsappWebJS.autenticated) {
-      await whatsappWebJS.pinnedChat(chatId);
+      return await whatsappWebJS.pinnedChat(chatId);
     }
+
+    return false;
   }
 
   async deleteChat(chatId) {
     if (whatsappWebJS.autenticated) {
-      await whatsappWebJS.deleteChat(chatId);
+      return await whatsappWebJS.deleteChat(chatId);
     }
+
+    return false;
+  }
+
+  async markUnread(chatId) {
+    if (whatsappWebJS.autenticated) {
+      return await whatsappWebJS.markUnread(chatId);
+    }
+
+    return false;
+  }
+
+  async sendSeen(chatId) {
+    if (whatsappWebJS.autenticated) {
+      return await whatsappWebJS.sendSeen(chatId);
+    }
+
+    return false;
+  }
+
+  async pinMessage(messageId, duration) {
+    if (whatsappWebJS.autenticated) {
+      return await whatsappWebJS.pinMessage(messageId, duration);
+    }
+
+    return false;
+  }
+
+  async getMessageMedia(messageId) {
+    if (whatsappWebJS.autenticated) {
+      return await whatsappWebJS.getMessageMedia(messageId);
+    }
+
+    return null;
+  }
+
+  async reactMessage(messageId, reaction) {
+    if (whatsappWebJS.autenticated) {
+      return await whatsappWebJS.reactMessage(messageId, reaction);
+    }
+
+    return false;
+  }
+
+  async deleteMessage(messageId, everyone) {
+    if (whatsappWebJS.autenticated) {
+      return await whatsappWebJS.deleteMessage(messageId, everyone);
+    }
+
+    return false;
+  }
+
+  async editMessage(messageId, content) {
+    if (whatsappWebJS.autenticated) {
+      return await whatsappWebJS.editMessage(messageId, content);
+    }
+
+    return null;
+  }
+
+  async forwardMessage(messageId, chatIdForward) {
+    if (whatsappWebJS.autenticated) {
+      return await whatsappWebJS.forwardMessage(messageId, chatIdForward);
+    }
+
+    return false;
+  }
+
+  async clearMessage(chatId) {
+    if (whatsappWebJS.autenticated) {
+      return await whatsappWebJS.clearMessage(chatId);
+    }
+
+    return false;
+  }
+
+  async sendStateTyping(chatId) {
+    if (whatsappWebJS.autenticated) {
+      return await whatsappWebJS.sendStateTyping(chatId);
+    }
+
+    return false;
+  }
+
+  async stopStateTyping(chatId) {
+    if (whatsappWebJS.autenticated) {
+      return await whatsappWebJS.stopStateTyping(chatId);
+    }
+
+    return false;
   }
 }
