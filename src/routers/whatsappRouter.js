@@ -153,6 +153,7 @@ export default class WhatsappRouter extends BaseRouter {
     });
   }
 
+
   sendContacts() {
     this.router.post("/sendContacts", async (req, res) => {
       try {
@@ -168,7 +169,6 @@ export default class WhatsappRouter extends BaseRouter {
           return;
         }
         console.log(body);
-        console.log("indo");
         let contactMessage = await this.whatsappController.sendContact(
           body.chatId,
           body.contacts
@@ -439,7 +439,7 @@ export default class WhatsappRouter extends BaseRouter {
           throw new Error("messageId é obrigatório.");
         }
 
-        if (!body.reaction) {
+        if (!body.reaction == null) {
           throw new Error("reaction é obrigatório.");
         }
 

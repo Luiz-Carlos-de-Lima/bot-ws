@@ -64,8 +64,8 @@ export default class AltomaticMessageController {
 
   async _validateInitialAltomaticMessage() {
     const listPatternMessages = await AltomaticMessage.find({});
-    if (!listPatternMessages.length) {
-      await AltomaticMessage.collection(
+    if (listPatternMessages.length == 0) {
+      const listAltomaticMessage = [
         {
           description: "Informação sobre pedido",
           enable: true,
@@ -88,15 +88,6 @@ export default class AltomaticMessageController {
           responseMessage:
             "Aqui está o nosso cardápio: https://jclan-app.alphax.jclan.com.br/",
           intention: "VER_CARDAPIO",
-        },
-        {
-          description: "Mensagem de resposta Olá, oi",
-          enable: true,
-          pattern: true,
-          sendMessage: "Oi",
-          originalResponseMessage: "Olá",
-          responseMessage: "Olá",
-          intention: "SAUDACAO_OI",
         },
         {
           description: "Mensagem de resposta Olá, oi",
@@ -168,7 +159,8 @@ export default class AltomaticMessageController {
             "Notícia boaaa seu pedido está pronto, é só vir buscar!",
           intention: "STATUS_BUSCAR_PEDIDO",
         }
-      );
+      ];
+      (await AltomaticMessage.createCollection()).insertMany(listAltomaticMessage);
     }
   }
 }

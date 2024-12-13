@@ -3,11 +3,11 @@ import puppeteer from "puppeteer";
 import WhatsappWebBase from "./whatsappBase";
 import AlphaxLocalAuth from "../../authStrategies/alphaxLocalAuth";
 import Utils from "../../utils/utils";
+import makeWASocket from '@whiskeysockets/baileys'
 
-class WhatsappWebJS extends WhatsappWebBase {
+class WhatsappWebBayleys extends WhatsappWebBase {
   qrCode = "";
   autenticated = false;
-  clientInfo = null;
   _callbackMessage;
   _callbackQrCode;
   _callbackAuthenticated;
@@ -47,80 +47,27 @@ class WhatsappWebJS extends WhatsappWebBase {
     this._init();
   }
 
-  async _startBrowser() {
-    if (!this._browser) {
-      this._browser = await puppeteer.launch({
-        headless: true,
-        args: [
-          "--no-sandbox",
-          "--no-experiments",
-          "--hide-scrollbars",
-          "--disable-plugins",
-          "--disable-infobars",
-          "--disable-translate",
-          "--disable-pepper-3d",
-          "--disable-extensions",
-          "--disable-dev-shm-usage",
-          "--disable-notifications",
-          "--disable-setuid-sandbox",
-          "--disable-crash-reporter",
-          "--disable-smooth-scrolling",
-          "--disable-login-animations",
-          "--disable-dinosaur-easter-egg",
-          "--disable-accelerated-2d-canvas",
-          "--disable-rtc-smoothness-algorithm",
-          "--autoplay-policy=user-gesture-required",
-          "--disable-background-networking",
-          "--disable-background-timer-throttling",
-          "--disable-backgrounding-occluded-windows",
-          "--disable-breakpad",
-          "--disable-client-side-phishing-detection",
-          "--disable-component-update",
-          "--disable-default-apps",
-          "--disable-domain-reliability",
-          "--disable-features=AudioServiceOutOfProcess",
-          "--disable-gpu",
-          "--disable-hang-monitor",
-          "--disable-ipc-flooding-protection",
-          "--disable-offer-store-unmasked-wallet-cards",
-          "--disable-popup-blocking",
-          "--disable-print-preview",
-          "--disable-prompt-on-repost",
-          "--disable-renderer-backgrounding",
-          "--disable-speech-api",
-          "--disable-sync",
-          "--ignore-gpu-blacklist",
-          "--metrics-recording-only",
-          "--mute-audio",
-          "--no-default-browser-check",
-          "--no-first-run",
-          "--no-pings",
-          "--no-zygote",
-          "--password-store=basic",
-          "--use-gl=swiftshader",
-          "--use-mock-keychain",
-          // "--single-process", //add teste.
-        ],
-      });
-    }
-    return this._browser;
+  async connectToWhatsApp() {
+    const sock = makeWASocket({
+      printQRInTerminal: true
+    });
+    sock.ev.on('connection.update', (update) => {
+      const { connection, lastDisconnect } = update
+      if (connection === 'close') {
+        const shouldReconnect = (lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut
+        console.log('connection closed due to ', lastDisconnect.error, ', reconnecting ', shouldReconnect)
+        if (shouldReconnect) {
+          connectToWhatsApp()
+        }
+      } else if (connection === 'open') {
+        console.log('opened connection')
+      }
+    })
   }
 
-  async _init() {
-    const browser = await this._startBrowser();
 
-    this._client = null;
-    this._client = new Client({
-      authStrategy: new AlphaxLocalAuth(),
-      takeoverOnConflict: true,
-      browserWSEndpoint: browser.wsEndpoint(),
-      qrMaxRetries: 5,
-    });
-    this.qrCode = "";
-    this.autenticated = false;
-    this._generateQrCode();
-    this._client
-      .initialize();
+  async _init() {
+    this.connectToWhatsApp();
   }
 
   onMessage(callback) {
@@ -226,7 +173,6 @@ class WhatsappWebJS extends WhatsappWebBase {
     this._client.on("authenticated", () => {
       console.log("authenticated");
       this.autenticated = true;
-      this.clientInfo = this._client.info;
       if (typeof this._callbackAuthenticated === "function") {
         this._callbackAuthenticated();
       }
@@ -234,7 +180,6 @@ class WhatsappWebJS extends WhatsappWebBase {
     this._client.on("ready", () => {
       console.log("ready");
       this.autenticated = true;
-      this.clientInfo = this._client.info;
       if (typeof this._callbackReady === "function") {
         this._callbackReady();
       }
@@ -538,7 +483,9 @@ class WhatsappWebJS extends WhatsappWebBase {
           let promises = contacts.map((contact) =>
             new Promise(async (resolve) => {
               if (contact != null && contact.id != null) {
-                let newContact = await this._client.getContactById(contact.id._serialized);
+                let newContact = await this.getContactById(
+                  contact.id._serialized
+                );
                 resolve(newContact);
               }
             }).then((contact) => listContacts.push(contact))
@@ -585,10 +532,9 @@ class WhatsappWebJS extends WhatsappWebBase {
           new Promise(async (resolve) => {
             let chatTemp = JSON.parse(JSON.stringify(chat));
             if (
-              chat.lastMessage.type === "gp2" ||
+              chat.lastMessage.type == "gp2" ||
               chat.lastMessage.type.toString().includes("notification") ||
-              chat.lastMessage.type === "call_log" &&
-              chat.lastMessage.type === "pinned_message"
+              chat.lastMessage.type == "call_log"
             ) {
               let listMessage = await chat.fetchMessages({
                 limit: 2,
@@ -664,8 +610,7 @@ class WhatsappWebJS extends WhatsappWebBase {
         if (messageId) {
           let message = await this._client.getMessageById(messageId);
           if (message.hasMedia) {
-            let media = await message.downloadMedia();
-            return media;
+            return await message.downloadMedia();
           }
         }
       }
@@ -841,11 +786,13 @@ class WhatsappWebJS extends WhatsappWebBase {
 
   async reactMessage(messageId, reaction) {
     try {
+      let reactionMessage = false;
       if (this.autenticated) {
         let message = await this.getMessage(messageId);
 
         if (message != null) {
           await message.react(reaction);
+          reactionMessage = true;
         }
       }
 
@@ -921,7 +868,7 @@ class WhatsappWebJS extends WhatsappWebBase {
     try {
       let sendStateTyping = false;
       if (this.autenticated) {
-        let chat = await this._client.getChatById(chatId);
+        let chat = await this.getChatById(chatId);
         await chat.sendStateTyping();
         sendStateTyping = true;
       }

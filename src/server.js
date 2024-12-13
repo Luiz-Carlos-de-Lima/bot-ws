@@ -15,6 +15,8 @@ import AltomaticMessageRouter from "./routers/altomaticMessageRouter";
 // Importar cron jobs
 import { scheduleCronJobs } from "./crons/campaigns_cron"; // Importar a função de cron
 
+const mainRouter = express.Router();
+
 // Inicialização das classes de rotas
 const whatsappRouter = new WhatsappRouter();
 const authRouter = new AuthRouter();
@@ -47,11 +49,15 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+
+
 // Adicionar as rotas de cada objeto
-app.use("/", whatsappRouter.router);
-app.use("/", authRouter.router);
-app.use("/", campaingRouter.router);
-app.use("/", altomaticMessageRouter.router);
+mainRouter.use("/", whatsappRouter.router);
+mainRouter.use("/", authRouter.router);
+mainRouter.use("/", campaingRouter.router);
+mainRouter.use("/", altomaticMessageRouter.router);
+
+app.use('/api', mainRouter);
 
 // Conectar ao banco de dados e iniciar o servidor
 db(async (_) => {

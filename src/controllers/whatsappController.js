@@ -56,6 +56,7 @@ export default class WhatsappController {
           clearInterval(interval);
           resolve({
             sessaoIniciada: true,
+            clientInfo: whatsappWebJS.clientInfo,
             qrCode: "",
           });
         } else if (whatsappWebJS.qrCode) {
@@ -183,18 +184,22 @@ export default class WhatsappController {
 
   async markUnread(chatId) {
     if (whatsappWebJS.autenticated) {
-      return await whatsappWebJS.markUnread(chatId);
+      let chat = await this.getChatById(chatId);
+      await chat.markUnread();
+      return -1;
     }
 
-    return false;
+    return 0;
   }
 
   async sendSeen(chatId) {
     if (whatsappWebJS.autenticated) {
-      return await whatsappWebJS.sendSeen(chatId);
+      let chat = await this.getChatById(chatId);
+      await chat.sendSeen();
+      return 0;
     }
 
-    return false;
+    return -1;
   }
 
   async pinMessage(messageId, duration) {
