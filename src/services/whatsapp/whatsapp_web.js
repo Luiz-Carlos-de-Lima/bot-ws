@@ -155,6 +155,10 @@ class WhatsappWebJS extends WhatsappWebBase {
     this._callbackAuthenticated = callback;
   }
 
+  onLoadSrceen(callback) {
+    this._callbackLoadingScreen = callback;
+  }
+
   onAuthFailure(callback) {
     this._callbackAuthFailure = callback;
   }

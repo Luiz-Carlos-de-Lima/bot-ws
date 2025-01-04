@@ -5,7 +5,7 @@ const CAMPAING_DAYS = Constants.CAMPAING_DAYS;
 
 // Esquema para o cronograma de disparos
 const ScheduleSchema = new mongoose.Schema({
-  day: {
+  day: [{
     type: String,
     enum: [
       CAMPAING_DAYS.Monday,
@@ -17,7 +17,7 @@ const ScheduleSchema = new mongoose.Schema({
       CAMPAING_DAYS.Sunday,
     ],
     required: true,
-  },
+  }],
   timeOfDay: {
     type: String,
     required: true, // Formato esperado: "HH:mm", por exemplo "14:30"
@@ -28,14 +28,27 @@ const ScheduleSchema = new mongoose.Schema({
   },
 });
 
-// Esquema da campanha
+const PhoneSchema = new mongoose.Schema({
+  name: {
+    type: String,
+  },
+  ddd: {
+    type: String,
+    required: true
+  },
+  number: {
+    type: String,
+    required: true,
+  }
+});
+
 const CampaingSchema = new mongoose.Schema({
   description: {
     type: String,
     required: true,
   },
   listPhoneNumber: {
-    type: [String], // Define que será um array de strings
+    type: [PhoneSchema],
     required: true,
   },
   caption: {
@@ -49,7 +62,8 @@ const CampaingSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
-  // Campo para o cronograma associado à campanha
+  startDate: { type: Date, required: true },
+  endDate: { type: Date, required: true },
   schedule: {
     type: [ScheduleSchema],
     required: true,

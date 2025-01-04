@@ -22,6 +22,14 @@ export default class WhatsappController {
       socket.io.emit("authenticated");
     });
 
+    whatsappWebJS.onReady(() => {
+      socket.io.emit("ready");
+    });
+
+    whatsappWebJS.onLoadSrceen((value) => {
+      socket.io.emit('loadScreen', value);
+    });
+
     whatsappWebJS.onDisconnected(() => {
       socket.io.emit("logout");
     });
@@ -37,6 +45,7 @@ export default class WhatsappController {
     whatsappWebJS.onUnreadCount(async (chat) => {
       socket.io.emit("unreadCount", chat);
     });
+
   }
 
   async iniciarBot() {

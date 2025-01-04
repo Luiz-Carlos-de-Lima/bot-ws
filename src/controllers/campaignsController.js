@@ -1,4 +1,5 @@
 import campaignModel from "../models/campaignModel";
+import Utils from "../utils/utils";
 
 export default class CampaignController {
   async getAllCampaign() {
@@ -13,7 +14,7 @@ export default class CampaignController {
   async getCampaignById(idCampaign) {
     try {
       const campaign = await campaignModel.findById(idCampaign);
-      return campaign; // Retorna a campanha específica
+      return campaign;
     } catch (error) {
       throw new Error(`Erro ao buscar campanha por ID: ${error.message}`);
     }
@@ -25,7 +26,9 @@ export default class CampaignController {
     caption,
     base64Image,
     enable,
-    schedule
+    schedule,
+    startDate,
+    endDate,
   ) {
     const newCampaign = new campaignModel({
       description,
@@ -34,6 +37,8 @@ export default class CampaignController {
       base64Image,
       enable,
       schedule,
+      startDate: startDate,
+      endDate: endDate,
     });
 
     await newCampaign.save();

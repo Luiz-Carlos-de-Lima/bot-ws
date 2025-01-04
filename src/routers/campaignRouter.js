@@ -25,8 +25,14 @@ export default class CampaingRouter extends BaseRouter {
         }
         if (!body.listPhoneNumber) {
           throw Error(
-            "Campo 'listPhoneNumber' do tipo Array de String é obrigatório!"
+            "Campo 'listPhoneNumber' obrigatório!"
           );
+        }
+        if (!body.startDate) {
+          throw Error("Campo 'startDate' obrigatório!");
+        }
+        if (!body.endDate) {
+          throw Error("Campo 'endDate' obrigatório!");
         }
         if (!body.caption) {
           throw Error("Campo 'caption' do tipo String é obrigatório!");
@@ -40,13 +46,20 @@ export default class CampaingRouter extends BaseRouter {
 
         await this.campaignController.createCampaign(
           body.description,
-          body.listPhoneNumber.map((phoneNumber) =>
-            phoneNumber.replace(/[()\-\s]/g, "")
+          body.listPhoneNumber.map((phoneNumber) => {
+            return {
+              name: phoneNumber.nome,
+              ddd: phoneNumber.ddd.replace(/[()\-\s]/g, ""),
+              number: phoneNumber.number.replace(/[()\-\s]/g, ""),
+            }
+          },
           ),
           body.caption,
           body.base64Image,
           body.enable ?? true,
-          body.schedule
+          body.schedule,
+          body.startDate,
+          body.endDate,
         );
         this.ok({}, res);
       } catch (e) {
