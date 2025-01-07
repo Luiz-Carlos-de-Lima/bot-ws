@@ -14,26 +14,31 @@ async function checkAndTriggerCampaigns() {
     // Buscar campanhas ativas que correspondem ao dia e horário atuais
     const campaigns = await Campaing.find({
       enable: true,
-      "schedule.day": currentDay,
-      "schedule.timeOfDay": currentTime,
+      startDate: { $lte: now },
+      endDate: { $gte: now },
+      schedule: {
+        $elemMatch: {
+          day: { $in: [currentDay] },    // Verifica se currentDay está no array day
+          timeOfDay: currentTime,
+        },
+      }
     });
 
-    console.log(campaigns);
-
     // Função para processar cada número de telefone com um intervalo de 10 segundos
-    const sendMessagesWithDelay = (phoneNumbers, image, caption, index = 0) => {
-      if (index >= phoneNumbers.length) return; // Terminar quando todos os números forem processados
+    const sendMessagesWithDelay = (phoneContacts, image, caption, index = 0) => {
+      if (index >= phoneContacts.length) return;
 
-      const phoneNumber = phoneNumbers[index];
-      console.log(`Enviando mensagem para: ${phoneNumber}`);
-
-      // Enviar a mensagem (ajuste a lógica de envio aqui conforme necessário)
-      whatsappController.sendImage(phoneNumber, image, caption);
+      const contact = phoneContacts[index];
+      if (contact.ddd && contact.number) {
+        let phoneNumber = `${contact.ddd}${contact.number}`;
+        console.log(`Enviando mensagem para: ${phoneNumber}`);
+        whatsappController.sendImage(phoneNumber, image, caption);
+      }
 
       // Disparar a próxima mensagem após 10 segundos
       setTimeout(() => {
-        sendMessagesWithDelay(phoneNumbers, image, caption, index + 1);
-      }, 10000); // 10 segundos = 10.000 ms
+        sendMessagesWithDelay(phoneContacts, image, caption, index + 1);
+      }, 10000);
     };
 
     // Função para processar cada campanha com um intervalo de 30 segundos

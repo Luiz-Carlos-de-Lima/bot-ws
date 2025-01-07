@@ -34,11 +34,8 @@ export default class CampaingRouter extends BaseRouter {
         if (!body.endDate) {
           throw Error("Campo 'endDate' obrigatório!");
         }
-        if (!body.caption) {
-          throw Error("Campo 'caption' do tipo String é obrigatório!");
-        }
-        if (!body.base64Image) {
-          throw Error("Campo 'base64Image' do tipo String é obrigatório!");
+        if (!body.caption || !body.base64Image) {
+          throw Error("Campo 'caption' ou 'base64Image' do tipo String é obrigatório!");
         }
         if (!body.schedule) {
           throw Error("Campo 'schedule' do tipo Array é obrigatório!");
@@ -128,11 +125,8 @@ export default class CampaingRouter extends BaseRouter {
             "Campo 'listPhoneNumber' do tipo Array de String é obrigatório!"
           );
         }
-        if (!body.caption) {
-          throw Error("Campo 'caption' do tipo String é obrigatório!");
-        }
-        if (!body.base64Image) {
-          throw Error("Campo 'base64Image' do tipo String é obrigatório!");
+        if (!body.caption || !body.base64Image) {
+          throw Error("Campo 'caption' ou 'base64Image' do tipo String é obrigatório!");
         }
         if (!body.schedule) {
           throw Error("Campo 'schedule' do tipo Array é obrigatório!");
@@ -141,14 +135,22 @@ export default class CampaingRouter extends BaseRouter {
         let response = await this.campaignController.editCampaign(
           body.id,
           body.description,
-          body.listPhoneNumber.map((phoneNumber) =>
-            phoneNumber.replace(/[()\-\s]/g, "")
+          body.listPhoneNumber.map((phoneNumber) => {
+            return {
+              name: phoneNumber.nome,
+              ddd: phoneNumber.ddd.replace(/[()\-\s]/g, ""),
+              number: phoneNumber.number.replace(/[()\-\s]/g, ""),
+            }
+          },
           ),
           body.caption,
           body.base64Image,
           body.enable ?? true,
-          body.schedule
+          body.schedule,
+          body.startDate,
+          body.endDate,
         );
+
         this.ok(response, res);
       } catch (e) {
         console.log(e);

@@ -1,5 +1,4 @@
 import campaignModel from "../models/campaignModel";
-import Utils from "../utils/utils";
 
 export default class CampaignController {
   async getAllCampaign() {
@@ -60,7 +59,9 @@ export default class CampaignController {
     caption,
     base64Image,
     enable,
-    schedule
+    schedule,
+    startDate,
+    endDate,
   ) {
     try {
       const updatedCampaign = await campaignModel.findByIdAndUpdate(
@@ -72,6 +73,8 @@ export default class CampaignController {
           base64Image,
           enable,
           schedule,
+          startDate: startDate,
+          endDate: endDate,
         },
         { new: true }
       );
