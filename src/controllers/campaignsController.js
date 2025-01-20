@@ -1,3 +1,4 @@
+import moment from "moment";
 import campaignModel from "../models/campaignModel";
 
 export default class CampaignController {
@@ -36,8 +37,8 @@ export default class CampaignController {
       base64Image,
       enable,
       schedule,
-      startDate: startDate,
-      endDate: endDate,
+      startDate: moment(startDate).startOf('day').toISOString(),
+      endDate: moment(endDate).endOf('day').toISOString(),
     });
 
     await newCampaign.save();
@@ -73,8 +74,8 @@ export default class CampaignController {
           base64Image,
           enable,
           schedule,
-          startDate: startDate,
-          endDate: endDate,
+          startDate: moment(startDate).startOf('day').toISOString(),
+          endDate: moment(endDate).endOf('day').toISOString(),
         },
         { new: true }
       );

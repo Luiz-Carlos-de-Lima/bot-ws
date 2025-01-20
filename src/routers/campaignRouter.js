@@ -45,7 +45,7 @@ export default class CampaingRouter extends BaseRouter {
           body.description,
           body.listPhoneNumber.map((phoneNumber) => {
             return {
-              name: phoneNumber.nome,
+              name: phoneNumber.name,
               ddd: phoneNumber.ddd.replace(/[()\-\s]/g, ""),
               number: phoneNumber.number.replace(/[()\-\s]/g, ""),
             }
@@ -137,7 +137,7 @@ export default class CampaingRouter extends BaseRouter {
           body.description,
           body.listPhoneNumber.map((phoneNumber) => {
             return {
-              name: phoneNumber.nome,
+              name: phoneNumber.name,
               ddd: phoneNumber.ddd.replace(/[()\-\s]/g, ""),
               number: phoneNumber.number.replace(/[()\-\s]/g, ""),
             }

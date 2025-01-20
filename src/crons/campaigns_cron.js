@@ -1,6 +1,9 @@
 import cron from "node-cron";
 import Campaing from "../models/campaignModel"; // Importar o modelo de campanha
 import WhatsappController from "../controllers/whatsappController";
+import whatsappWebJS from "../services/whatsapp/whatsapp_web";
+
+let queueOfCampaigns = [];
 
 // Função para verificar e disparar campanhas
 async function checkAndTriggerCampaigns() {
@@ -32,10 +35,16 @@ async function checkAndTriggerCampaigns() {
       if (contact.ddd && contact.number) {
         let phoneNumber = `${contact.ddd}${contact.number}`;
         console.log(`Enviando mensagem para: ${phoneNumber}`);
-        whatsappController.sendImage(phoneNumber, image, caption);
+
+        if (image !== null) {
+          whatsappController.sendImage(phoneNumber, image, caption);
+        } else {
+          whatsappController.sendMessage(phoneNumber, caption);
+        }
       }
 
       // Disparar a próxima mensagem após 10 segundos
+      whatsappWebJS.sendStateTyping(whatsappWebJS.getChatId(phoneContacts[index]));
       setTimeout(() => {
         sendMessagesWithDelay(phoneContacts, image, caption, index + 1);
       }, 10000);

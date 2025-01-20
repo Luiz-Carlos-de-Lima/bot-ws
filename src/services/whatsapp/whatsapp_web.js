@@ -449,7 +449,7 @@ class WhatsappWebJS extends WhatsappWebBase {
   async sendMessage(phoneNumber, message) {
     try {
       if (this.autenticated) {
-        let chatId = await this._getChatId(phoneNumber);
+        let chatId = await this.getChatId(phoneNumber);
         if (chatId) {
           await this.stopStateTyping(chatId);
           return await this._client.sendMessage(chatId, message);
@@ -486,7 +486,7 @@ class WhatsappWebJS extends WhatsappWebBase {
     }
   }
 
-  async _getChatId(phoneNumber) {
+  async getChatId(phoneNumber) {
     try {
       let phoneId = await this._client.getNumberId(phoneNumber);
       return phoneId ? phoneId._serialized : null;
@@ -498,7 +498,7 @@ class WhatsappWebJS extends WhatsappWebBase {
   async sendImage(phoneNumber, base64Image, caption) {
     try {
       if (this.autenticated) {
-        let chatId = await this._getChatId(phoneNumber);
+        let chatId = await this.getChatId(phoneNumber);
         if (chatId) {
           const media = new MessageMedia("image/png", base64Image);
           return await this._client.sendMessage(chatId, media, {
@@ -799,7 +799,6 @@ class WhatsappWebJS extends WhatsappWebBase {
     try {
       if (messageId) {
         let message = await this._client.getMessageById(messageId);
-
         let promisesMessage = [];
         if (message.hasQuotedMsg) {
           promisesMessage.push(message.getQuotedMessage().then((value) => {
@@ -810,7 +809,7 @@ class WhatsappWebJS extends WhatsappWebBase {
         if (message.hasReaction) {
           promisesMessage.push(message.getReactions().then((value) => {
             message['reaction'] = value;
-          }));
+          }).catch((_) => { }));
         }
 
         if (promisesMessage.length > 0) {
